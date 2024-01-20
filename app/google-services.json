@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "525073018153",
+    "project_id": "resoluteai-2a84b",
+    "storage_bucket": "resoluteai-2a84b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525073018153:android:c7700ab75bd538276e9b38",
+        "android_client_info": {
+          "package_name": "com.application.resoluteai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBn0nkUXlxyma51Pl0Q5PGeVUqC3Q6lcM4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
