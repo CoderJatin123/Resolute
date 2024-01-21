@@ -12,7 +12,9 @@
 
         <TextView
 
+            android:clickable="true"
             android:id="@+id/signup"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
@@ -24,9 +26,9 @@
 
         <ImageView
             android:id="@+id/imageView"
-            android:layout_width="165dp"
+            android:layout_width="200dp"
             android:layout_height="187dp"
-            android:src="@drawable/icon_shield"
+            android:src="@drawable/login"
             app:layout_constraintBottom_toTopOf="@+id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"

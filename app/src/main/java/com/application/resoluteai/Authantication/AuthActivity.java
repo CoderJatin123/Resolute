@@ -11,11 +11,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.application.resoluteai.Authantication.Login.Login;
+import com.application.resoluteai.Authantication.OTP.FragmentOTP;
 import com.application.resoluteai.Authantication.Signup.Signup;
 import com.application.resoluteai.MainActivity;
 import com.application.resoluteai.R;
+import com.application.resoluteai.ViewModel.AuthViewModel;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
@@ -36,8 +39,11 @@ public class AuthActivity extends AppCompatActivity{
     private FragmentManager fragmentManager;
     private Login login;
     private Signup signup;
+    private FragmentOTP otp_fragment;
     private FirebaseAuth mAuth;
     private String verification_Id;
+    private AuthViewModel authViewModel;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,21 +52,29 @@ public class AuthActivity extends AppCompatActivity{
 
         init();
         // Initialize Firebase Auth
+
+        authViewModel= new ViewModelProvider(this).get(AuthViewModel.class);
+
         mAuth = FirebaseAuth.getInstance();
 
         Intent intent =getIntent();
 
         if (intent!=null) {
             String tag = intent.getStringExtra("TAG");
+
+
             if (tag != null && tag.equals("TAG_LOGOUT")) {
                 logout();
             }
             if (checkLogin()) {
                     OnAuthCompleted();
-                }
+//                  loadOtpVerification();
+            }
+
 
             login = new Login();
             loadFragment(login);
+//            loadOtpVerification();
 
             }
 
@@ -79,7 +93,7 @@ public class AuthActivity extends AppCompatActivity{
         String email = x.get("email");
         String pass = x.get("pass");
         if (email == null || pass == null) {
-            Toast.makeText(this, "Account not Available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please check email or password filled correctly.", Toast.LENGTH_SHORT).show();
         }
         mAuth.signInWithEmailAndPassword(email, pass)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -119,6 +133,12 @@ public class AuthActivity extends AppCompatActivity{
         loadFragment(login);
     }
 
+    void loadOtpVerification(){
+        if(otp_fragment==null)
+            otp_fragment= FragmentOTP.newInstance();
+        loadFragment(otp_fragment);
+    }
+
     public void createUser(String name,String email, String pass){
 
         mAuth.createUserWithEmailAndPassword(email, pass)
@@ -128,7 +148,6 @@ public class AuthActivity extends AppCompatActivity{
                         if (task.isSuccessful()) {
 
                             FirebaseUser user = mAuth.getCurrentUser();
-//                            mAuth.setLanguageCode("en");
                             UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                     .setDisplayName(name).build();
 
@@ -137,7 +156,7 @@ public class AuthActivity extends AppCompatActivity{
                                         @Override
                                         public void onComplete(@NonNull Task<Void> task) {
                                             if (task.isSuccessful()) {
-                                                OnAuthCompleted();
+                                                onEmailRegistered();
                                             }
                                             else {
                                                 Toast.makeText(AuthActivity.this, "Account Creation failed.",
@@ -175,9 +194,13 @@ public class AuthActivity extends AppCompatActivity{
     }
 
     public void send_otp(String phoneNumber){
+
+        Toast.makeText(AuthActivity.this, "Please wait at moment.we are checking you are not robot.", Toast.LENGTH_SHORT).show();
+
         PhoneAuthOptions options =
                 PhoneAuthOptions.newBuilder(mAuth)
                         .setPhoneNumber(phoneNumber)
+                        .setActivity(AuthActivity.this)
                         .setTimeout(60L, TimeUnit.SECONDS)
                         .setCallbacks(mCallbacks)
                         .build();
@@ -187,48 +210,41 @@ public class AuthActivity extends AppCompatActivity{
 
         @Override
         public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-            // This callback will be invoked in two situations:
-            // 1 - Instant verification. In some cases the phone number can be instantly
-            //     verified without needing to send or enter a verification code.
-            // 2 - Auto-retrieval. On some devices Google Play services can automatically
-            //     detect the incoming verification SMS and perform verification without
-            //     user action.
-            Log.d(TAG, "onVerificationCompleted:" + credential);
 
-            signInWithPhoneAuthCredential(credential);
+            //In case Verification done through Google Play service
+            Toast.makeText(AuthActivity.this, "Verification completed successfully.", Toast.LENGTH_SHORT).show();
+            OnVerificationCompleted();
         }
 
         @Override
         public void onVerificationFailed(@NonNull FirebaseException e) {
-            // This callback is invoked in an invalid request for verification is made,
-            // for instance if the the phone number format is not valid.
             Log.w("TAG", "onVerificationFailed", e);
             Toast.makeText(AuthActivity.this, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
-            // Show a message and update the UI
         }
 
         @Override
         public void onCodeSent(@NonNull String verificationId,
                 @NonNull PhoneAuthProvider.ForceResendingToken token) {
             verification_Id=verificationId;
-
-
-//            mResendToken = token;
+            otp_fragment.enableVerifyBtn();
+            Toast.makeText(AuthActivity.this, "Otp sent successfully.", Toast.LENGTH_SHORT).show();
         }
     };
 
     public void onVerify(String code){
         if(verification_Id!=null) {
+
             PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verification_Id, code);
-            mAuth.signInWithCredential(credential)
+
+            mAuth.getCurrentUser().linkWithCredential(credential)
                     .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                         @Override
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
                                 Log.d("TAG", "signInWithCredential:success");
+
                                 OnVerificationCompleted();
-//                                FirebaseUser user = task.getResult().getUser();
-//                                // Update UI
+
                             } else {
                                 // Sign in failed, display a message and update the UI
                                 Log.w("TAG", "signInWithCredential:failure", task.getException());
@@ -239,9 +255,15 @@ public class AuthActivity extends AppCompatActivity{
                         }
                     });
         }
+
+
     }
 
     void OnVerificationCompleted(){
+        OnAuthCompleted();
+    }
 
+    void onEmailRegistered(){
+       loadOtpVerification();
     }
 }
